@@ -1,0 +1,76 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  camunda:
+    image: camunda/camunda:8.8.24
+    container_name: camunda
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "8080:8080"   # Operate / Tasklist / REST API
+      - "26500:26500" # gRPC
+      - "9600:9600"   # management
+    environment:
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=admin
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=admin
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Admin
+      - CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=admin@example.com
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=admin
+      - CAMUNDA_DATA_SECONDARY_STORAGE_TYPE=elasticsearch
+      - CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 40
+      start_period: 60s
+
+  connectors:
+    image: camunda/connectors-bundle:8.8.21
+    container_name: connectors
+    depends_on:
+      camunda:
+        condition: service_healthy
+    environment:
+      - CAMUNDA_CLIENT_MODE=self-managed
+      - CAMUNDA_CLIENT_GRPCADDRESS=http://camunda:26500
+      - CAMUNDA_CLIENT_RESTADDRESS=http://camunda:8080
+      - CAMUNDA_CLIENT_AUTH_METHOD=none
+      # Секреты для AI Agent connector ({{secrets.OLLAMA_*}} в BPMN).
+      # Ollama запущена на хосте, OpenAI-совместимый API — /v1
+      - OLLAMA_ENDPOINT=http://host.docker.internal:11434/v1
+      - OLLAMA_MODEL=qwen3:14b
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  app:
+    build: .
+    container_name: camunda-ai-app
+    restart: on-failure
+    depends_on:
+      camunda:
+        condition: service_healthy
+      connectors:
+        condition: service_started
+    environment:
+      - CAMUNDA_CLIENT_GRPC_ADDRESS=http://camunda:26500
+      - CAMUNDA_CLIENT_REST_ADDRESS=http://camunda:8080
+    ports:
+      - "8081:8081"

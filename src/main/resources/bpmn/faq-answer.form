@@ -1,0 +1,29 @@
+{
+  "id": "faq-answer-form",
+  "type": "default",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "schemaVersion": 18,
+  "components": [
+    {
+      "id": "Field_question",
+      "type": "textarea",
+      "key": "question",
+      "label": "Вопрос клиента",
+      "readonly": true
+    },
+    {
+      "id": "Field_aiAnswer",
+      "type": "textarea",
+      "key": "aiAnswer",
+      "label": "Ответ ИИ по FAQ (можно отредактировать)",
+      "validate": { "required": true }
+    },
+    {
+      "id": "Field_approved",
+      "type": "checkbox",
+      "key": "approved",
+      "label": "Ответ проверен и отправлен клиенту"
+    }
+  ]
+}

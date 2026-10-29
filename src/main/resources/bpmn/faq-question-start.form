@@ -1,0 +1,16 @@
+{
+  "id": "faq-question-start-form",
+  "type": "default",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "schemaVersion": 18,
+  "components": [
+    {
+      "id": "Field_question",
+      "type": "textarea",
+      "key": "question",
+      "label": "Ваш вопрос",
+      "validate": { "required": true }
+    }
+  ]
+}

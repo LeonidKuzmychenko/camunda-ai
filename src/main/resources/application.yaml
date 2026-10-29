@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: camunda-ai
+server:
+  port: 8081
+camunda:
+  client:
+    mode: self-managed
+    auth:
+      method: none
+    grpc-address: ${CAMUNDA_CLIENT_GRPC_ADDRESS:http://localhost:26500}
+    rest-address: ${CAMUNDA_CLIENT_REST_ADDRESS:http://localhost:8080}
+faq:
+  # Можно указать внешний файл: FAQ_LOCATION=file:/path/to/faq.md
+  location: ${FAQ_LOCATION:classpath:faq/faq.md}
